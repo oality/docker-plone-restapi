@@ -1,0 +1,34 @@
+version: '3'
+services:
+  zeo:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: "oality/plone.restapi"
+    volumes:
+      - data:/data
+    command: zeo
+  api:
+    image: "oality/plone.restapi"
+    links:
+      - zeo
+    environment:
+      - ZEO_ADDRESS=zeo:8080
+      - ZEO_SHARED_BLOB_DIR=on
+    ports:
+      - 8080
+    volumes:
+      - data:/data
+    labels:
+      - "traefik.frontend.rule=Host:plone.localhost;AddPrefix:/VirtualHostBase/http/plone.localhost/Plone/VirtualHostRoot"
+  reverse-proxy:
+    image: traefik
+    command: --api --docker # Enables the web UI and tells Træfik to listen to docker
+    ports:
+      - "80:80"     # The HTTP port
+      - "8080:8080" # The Web UI (enabled by --api)
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+
+volumes:
+  data:
